@@ -1,0 +1,5 @@
+name = Cache Master
+description = Provides a simple Drupal module for transferring load responsibility of defined paths to the CDN.
+core = 7.x
+
+configure = admin/config/system/cachemaster

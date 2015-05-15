@@ -1,0 +1,96 @@
+<?php
+/**
+ * @file
+ *
+ * Cache Master Module
+ *
+ * Code for the Cache Master module. This module transfers responsibility to the
+ * CDN by marking the given path as Not Cacheable, the page is never cached by
+ * Drupal. The path can then be given an optional max-age value in seconds.
+ * This will let the CDN know to not retrieve a fresh copy from drupal until
+ * the page has expired.
+ *
+ * @author
+ * Lance Geng <longlivelance@gmail.com>
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function cache_master_menu() {
+
+  $items['admin/config/system/cache-master'] = array(
+    'title' => t('Cache Master'),
+    'description' => t('Configure paths to exclude from caching and optionally define the max-age header.'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cache_master_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'includes/cache_master.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_boot().
+ *
+ * If we have a value in our cache master list, try to parse it. One path per
+ * line, followed by an optional space and time in seconds to set the max-age
+ * header. e.g. live 60
+ */
+function cache_master_boot() {
+
+  $cache_master_list = trim(variable_get('cache_master_list', ''));
+  if (!empty($cache_master_list)) {
+
+    $paths = explode("\n", $cache_master_list);
+
+    $patterns = array();
+    $headers = array();
+
+    foreach ($paths as $path) {
+      $path_config = explode(" ", $path);
+      if (count($path_config) <= 2) {
+        $patterns[] = $path_config[0];
+        if (!empty($path_config[1])) {
+          $headers[$path_config[0]] = (int)$path_config[1];
+        }
+      }
+    }
+
+    if (!empty($patterns)) {
+      foreach($patterns as $pattern) {
+        if (cache_master_match_path($pattern)) {
+          drupal_page_is_cacheable(FALSE);
+          if (!empty($headers[$pattern]) && $headers[$pattern] > 0) {
+            drupal_add_http_header('Cache-Control', 'public, max-age=' . $headers[$pattern]);
+          }
+          return;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Checks if a given pattern matches the current path.
+ */
+function cache_master_match_path($pattern) {
+  $to_replace = array(
+    '/(\r\n?|\n)/', // newlines
+    '/\\\\\*/', // asterisks
+    '/(^|\|)\\\\<front\\\\>($|\|)/', // <front>
+  );
+  $replacements = array(
+    '|',
+    '.*',
+    '\1' . preg_quote(variable_get('site_frontpage', 'node'), '/') . '\2',
+  );
+  $pattern_quoted = preg_quote($pattern, '/');
+  $regexp = '/^(' . preg_replace($to_replace, $replacements, $pattern_quoted) . ')$/';
+
+  $request_path = request_path();
+
+  return (bool)preg_match($regexp, $request_path);
+}

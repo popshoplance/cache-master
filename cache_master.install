@@ -1,0 +1,16 @@
+<?php
+/**
+ * @file
+ *
+ * Cache Master Module Install Functions
+ *
+ * @author
+ * Lance Geng <longlivelance@gmail.com>
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function cache_master_uninstall() {
+  variable_del('cache_master_list');
+}
