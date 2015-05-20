@@ -9,6 +9,40 @@
  */
 
 /**
+ * Implements hook_schema().
+ */
+function cache_master_schema() {
+  $schema = array();
+
+  $schema['cache_master'] = array(
+    'description' => 'Table to store cache_master paths',
+    'fields' => array(
+      'cache_master_uid' => array(
+        'description' => 'Unique id for the tag',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'cache_master_path' => array(
+        'description' => 'Cache path pattern',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'cache_master_time' => array(
+        'description' => 'Cache path time',
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('cache_master_uid'),
+  );
+
+  return $schema;
+}
+
+/**
  * Implements hook_uninstall().
  */
 function cache_master_uninstall() {
