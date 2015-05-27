@@ -15,7 +15,7 @@ function cache_master_form() {
   $form = array();
   $form['description'] = array(
     '#prefix' => '<div>',
-    '#markup' => 'Set paths and expiration time in seconds',
+    '#markup' => 'Set paths and expiration time in seconds.',
     '#suffix' => '</div>',
   );
   $form['cache_master_path'] = array(
@@ -26,7 +26,7 @@ function cache_master_form() {
   $form['cache_master_cache_time'] = array(
       '#title' => t('Cache Time'),
       '#type' => 'textfield',
-      '#description' => t('Cache time in seconds for defined path'),
+      '#description' => t('Cache time in seconds for defined path.'),
       '#default_value' => variable_get('cache_master_cache_time', '')
   );
 
@@ -98,7 +98,17 @@ function cache_master_edit_form() {
  * @param &$form_state: Reference to state of cache_master_form.
  */
 function cache_master_form_validate($form, &$form_state) {
-  // TBD form validation
+  $path = $form_state['values']['cache_master_path'];
+  $time = $form_state['values']['cache_master_cache_time'];
+  if (empty($path)) {
+    form_set_error('cache_master_path', t('Must provide a value for path.'));
+  }
+  if (empty($time)) {
+    form_set_error('cache_master_cache_time', t('Must provide a value for ttl.'));
+  }
+  elseif (!is_numeric($time)) {
+    form_set_error('cache_master_cache_time', t('ttl must be a number.'));
+  }
 }
 
 /**

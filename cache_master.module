@@ -60,40 +60,26 @@ function cache_master_menu() {
  */
 function cache_master_boot() {
 
-  $cache_master_list = trim(variable_get('cache_master_list', ''));
+  $cache_master_list = cache_master_get_paths();
+
   if (!empty($cache_master_list)) {
-
-    $paths = explode("\n", $cache_master_list);
-
-    $patterns = array();
-    $headers = array();
-
-    foreach ($paths as $path) {
-      $path_config = explode(" ", $path);
-      if (count($path_config) <= 2) {
-        $patterns[] = $path_config[0];
-        if (!empty($path_config[1])) {
-          $headers[$path_config[0]] = (int)$path_config[1];
+    foreach ($cache_master_list as $pattern_set) {
+      if (cache_master_match_path($pattern_set['cache_master_path'])) {
+        drupal_page_is_cacheable(FALSE);
+        $cache_time = (int)$pattern_set['cache_master_time'];
+        if (!empty($cache_time) && $cache_time > 0) {
+          drupal_add_http_header('Cache-Control', 'public, max-age=' . $cache_time);
         }
-      }
-    }
-
-    if (!empty($patterns)) {
-      foreach($patterns as $pattern) {
-        if (cache_master_match_path($pattern)) {
-          drupal_page_is_cacheable(FALSE);
-          if (!empty($headers[$pattern]) && $headers[$pattern] > 0) {
-            drupal_add_http_header('Cache-Control', 'public, max-age=' . $headers[$pattern]);
-          }
-          return;
-        }
+        return;
       }
     }
   }
+
 }
 
 /**
  * Checks if a given pattern matches the current path.
+ * @param $pattern (string) url pattern.
  */
 function cache_master_match_path($pattern) {
   $to_replace = array(
