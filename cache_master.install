@@ -17,34 +17,26 @@ function cache_master_schema() {
   $schema['cache_master'] = array(
     'description' => 'Table to store cache_master paths',
     'fields' => array(
-      'cache_master_uid' => array(
-        'description' => 'Unique id for the tag',
+      'cmid' => array(
+        'description' => 'Cache Master ID',
         'type' => 'serial',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),
-      'cache_master_path' => array(
-        'description' => 'Cache path pattern',
+      'path' => array(
+        'description' => 'Cache Master Path Pattern',
         'type' => 'varchar',
         'length' => '255',
         'not null' => FALSE,
       ),
-      'cache_master_time' => array(
-        'description' => 'Cache path time',
-        'type' => 'varchar',
-        'length' => '255',
+      'ttl' => array(
+        'description' => 'Cache Master Path TTL',
+        'type' => 'int',
         'not null' => FALSE,
       ),
     ),
-    'primary key' => array('cache_master_uid'),
+    'primary key' => array('cmid'),
   );
 
   return $schema;
-}
-
-/**
- * Implements hook_uninstall().
- */
-function cache_master_uninstall() {
-  variable_del('cache_master_list');
 }
