@@ -5,6 +5,36 @@
  *
  */
 
+ /**
+  * Displays the date format strings overview page.
+  */
+ function cache_master_admin() {
+   $header = array(t('Path'), t('TTL'), array('data' => t('Operations'), 'colspan' => '2'));
+   $rows = array();
+
+   $paths = cache_master_get_paths();
+   dpm($paths);
+   if (!empty($paths)) {
+     foreach ($paths as $path) {
+       $row = array();
+       $row[] = array('data' => $path['cache_master_path']);
+       $row[] = array('data' => $path['cache_master_time']);
+       $row[] = array('data' => l(t('edit'), 'admin/config/system/cache-master/edit/' . $path['id']));
+       $row[] = array('data' => l(t('delete'), 'admin/config/system/cache-master/delete/' . $format['id']));
+       $rows[] = $row;
+     }
+   }
+
+   $build['date_formats_table'] = array(
+     '#theme' => 'table',
+     '#header' => $header,
+     '#rows' => $rows,
+     '#empty' => t('No Paths have been set. <a href="@link">Add Path</a>.', array('@link' => url('admin/config/system/cache-master/add'))),
+   );
+
+   return $build;
+ }
+
 /**
  * cache_master_form
  * Creates admin form.
@@ -99,15 +129,15 @@ function cache_master_edit_form() {
  */
 function cache_master_form_validate($form, &$form_state) {
   $path = $form_state['values']['cache_master_path'];
-  $time = $form_state['values']['cache_master_cache_time'];
+  $time = $form_state['values']['cache_master_ttl'];
   if (empty($path)) {
     form_set_error('cache_master_path', t('Must provide a value for path.'));
   }
   if (empty($time)) {
-    form_set_error('cache_master_cache_time', t('Must provide a value for ttl.'));
+    form_set_error('cache_master_ttl', t('Must provide a value for TTL.'));
   }
   elseif (!is_numeric($time)) {
-    form_set_error('cache_master_cache_time', t('ttl must be a number.'));
+    form_set_error('cache_master_ttl', t('TTL must be a number.'));
   }
 }
 
@@ -121,7 +151,7 @@ function cache_master_form_validate($form, &$form_state) {
 function cache_master_form_submit(&$form, &$form_state) {
   drupal_set_message(t('All your path belong to us. Path saved.'));
 
-  cache_master_set_path($form_state['values']['cache_master_path'], $form_state['values']['cache_master_cache_time']);
+  cache_master_set_path($form_state['values']['cache_master_path'], $form_state['values']['cache_master_ttl']);
 }
 
 /**
@@ -134,10 +164,10 @@ function cache_master_form_submit(&$form, &$form_state) {
 function cache_master_edit_form_submit(&$form, &$form_state) {
   db_update('cache_master')
     ->fields(array(
-      'cache_master_path' => $form_state['input']['cache_master_path'],
-      'cache_master_time' => $form_state['input']['cache_master_cache_time']
+      'path' => $form_state['input']['cache_master_path'],
+      'ttl' => $form_state['input']['cache_master_ttl']
     ))
-    -> condition('cache_master_uid', arg(5))
+    -> condition('cmid', arg(5))
     ->execute();
 
   drupal_set_message(t('Path saved.'));

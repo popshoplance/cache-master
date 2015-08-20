@@ -23,26 +23,38 @@ function cache_master_menu() {
   $items['admin/config/system/cache-master'] = array(
     'title' => t('Cache Master'),
     'description' => t('Configure paths to exclude from caching and optionally define the max-age header.'),
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'cache_master_admin',
     'page arguments' => array('cache_master_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'cache_master.admin.inc',
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['admin/config/system/cache-master/edit/%'] = array(
+
+  $items['admin/config/system/cache-master/add'] = array(
+    'title' => 'Add Cache Master',
+    'description' => 'Allow users to add additional cache masters.',
+    'type' => MENU_LOCAL_ACTION,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('cache_master_edit_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'cache_master.admin.inc',
+    'weight' => -10,
+  );
+
+  $items['admin/config/system/cache-master/%/edit'] = array(
     'title' => 'Cache Master Edit Path',
     'description' => 'Re-configure existing paths.',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('cache_master_edit_form', 5),
+    'page arguments' => array('cache_master_edit_form', 4),
     'file' => 'cache_master.admin.inc',
     'access arguments' => array('administer site configuration'),
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/config/system/cache-master/remove/%'] = array(
+  $items['admin/config/system/cache-master/%/delete'] = array(
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('cache_master_remove_path', 5),
+    'page arguments' => array('cache_master_delete_path', 4),
     'file' => 'cache_master.admin.inc',
     'access arguments' => array('administer site configuration'),
     'type' => MENU_CALLBACK,
@@ -60,13 +72,13 @@ function cache_master_menu() {
  */
 function cache_master_boot() {
 
-  $cache_master_list = cache_master_get_paths();
+  $cache_masters = cache_master_get_paths();
 
-  if (!empty($cache_master_list)) {
-    foreach ($cache_master_list as $pattern_set) {
-      if (cache_master_match_path($pattern_set['cache_master_path'])) {
+  if (!empty($cache_masters)) {
+    foreach ($cache_masters as $cache_master) {
+      if (cache_master_match_path($cache_master['path'])) {
         drupal_page_is_cacheable(FALSE);
-        $cache_time = (int)$pattern_set['cache_master_time'];
+        $cache_time = (int)$cache_masters['ttl'];
         if (!empty($cache_time) && $cache_time > 0) {
           drupal_add_http_header('Cache-Control', 'public, max-age=' . $cache_time);
         }
@@ -107,10 +119,10 @@ function cache_master_match_path($pattern) {
  * @param $id (int) unique id of a path in the db.
  * @return returns array of specified tag or all paths.
  */
-function cache_master_get_paths($id = '') {
-  $return = '';
-  if ($id) {
-    $result = db_query("SELECT * FROM {cache_master} WHERE cache_master_uid=:id", array(':id' => $id));
+function cache_master_get_paths($cmid = FALSE) {
+  $return = FALSE;
+  if ($cmid) {
+    $result = db_query("SELECT * FROM {cache_master} WHERE cmid = :cmid", array(':cmid' => $cmid));
     return $result->fetchAssoc();
   }
   else {
@@ -132,8 +144,8 @@ function cache_master_get_paths($id = '') {
 function cache_master_set_path($path_pattern, $cache_time) {
   db_insert('cache_master')
     ->fields(array(
-      'cache_master_path' => $path_pattern,
-      'cache_master_time' => $cache_time
+      'path' => $path_pattern,
+      'ttl' => $cache_time
     ))
     ->execute();
 }
@@ -142,11 +154,10 @@ function cache_master_set_path($path_pattern, $cache_time) {
  * cache_master_remove_tag
  * Deletes the tag from the database.
  */
-function cache_master_remove_path() {
-  $id = arg(5);
+function cache_master_delete_path($cmid) {
   db_delete('cache_master')
-    ->condition('cache_master_uid', $id)
+    ->condition('cmid', $cmid)
     ->execute();
-  drupal_set_message(t('Path removed.'));
+  drupal_set_message(t('Path Deleted.'));
   drupal_goto('admin/config/system/cache-master');
 }
